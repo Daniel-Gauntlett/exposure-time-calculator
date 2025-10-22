@@ -5,14 +5,16 @@ sed_filter = 'Vega_SED.dat'
 
 v_curve = 'kp1465'
 
+h = 6.6 * (10 ** -27) # in ergs * s
+
+c = 3 * (10 ** 18) # in angstroms / s
+
 sed_input = []
 
 sedx = []
 sedy = []
 
 sed_pairs = []
-
-print(mathfunctions.integrate([(0,0),(1,1),(2,2),(3,3)],0,2.5))
 
 # read in sed filter
 
@@ -67,5 +69,11 @@ pyplot.show()
 # integrate
 
 flux = mathfunctions.integrate([(interpolated[i][0], interpolated[i][1] * vy[i]) for i in range(len(v_pairs))], vx[0], vx[-1])
-
 print(flux)
+
+
+# instead get photon number
+photonnumber = mathfunctions.integrate(
+    [(interpolated[i][0], interpolated[i][1] * v_pairs[i][1] / (h * c / (interpolated[i][0]))) for i in range(len(v_pairs))], 
+    v_pairs[0][0], v_pairs[-1][0])
+print(photonnumber)
