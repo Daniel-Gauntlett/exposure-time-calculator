@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as pyplot
 
 vega_m_vega = 0
 alt_m_vega = 28
@@ -31,4 +32,7 @@ with open(sed_filter, 'r') as sed:
 
 scale_for_ab = [(i[0], 10 ** ((28 - (2.5 * math.log(i[1], 10) - 48.6)) / -2.5)) for i in sed_pairs]
 
-print(scale_for_ab)
+pyplot.plot([x[0] for x in scale_for_ab],[y[1] for y in scale_for_ab])
+pyplot.xscale('log')
+pyplot.yscale('log')
+pyplot.show()
