@@ -39,7 +39,7 @@ with open(v_curve, 'r') as curve:
 
 # create ab filter zero point
 
-interpolated = [(i, 3.63 * (10 ** -20)) for i in vx]
+interpolated = [(i, 3.63 * (10 ** -20) * c / (i ** 2)) for i in vx]
 
 # integrate
 
