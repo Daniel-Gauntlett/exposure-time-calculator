@@ -10,14 +10,14 @@ def normalize(star,vega,star_mag):
     starpairs = []
     with open(star, 'r') as curve:
         for line in curve:
-            if line[0] == ' ' and len(line) > 2 and line[1] != '"' and line[2] != '-':
+            if len(line.strip()) > 0 and line.strip()[0] not in ["#", '"', "-"]:
                 if line[-1] == '\n':
                     end = -1
                 else:
                     end = len(line)
                 star_input.append(list(filter(lambda num: num != "", line[0:end].split(" "))))
-                starx.append(float(starpairs[-1][0]))
-                stary.append(float(starpairs[-1][1]) / 100)
+                starx.append(float(star_input[-1][0]))
+                stary.append(float(star_input[-1][1]) / 100)
                 starpairs.append((starx[-1],stary[-1]))
     vega_input = []
     vegax = []
@@ -25,30 +25,29 @@ def normalize(star,vega,star_mag):
     vegapairs = []
     with open(vega, 'r') as curve:
         for line in curve:
-            if line[0] == ' ' and len(line) > 2 and line[1] != '"' and line[2] != '-':
+            if len(line.strip()) > 0 and line.strip()[0] not in ["#", '"', "-"]:
                 if line[-1] == '\n':
                     end = -1
                 else:
                     end = len(line)
                 vega_input.append(list(filter(lambda num: num != "", line[0:end].split(" "))))
-                vegax.append(float(vegapairs[-1][0]))
-                vegay.append(float(vegapairs[-1][1]) / 100)
+                vegax.append(float(vega_input[-1][0]))
+                vegay.append(float(vega_input[-1][1]) / 100)
                 vegapairs.append((vegax[-1],vegay[-1]))
     vegainterped = mathfunctions.interpolate(vegapairs, [pair[0] for pair in starpairs])
-    scaled = [(i[0], 10 ** ((vegainterped - star_mag) / -2.5)) for i in starpairs]
+    scaled = [(starpairs[i][0], 10 ** ((vegainterped[i][1] - star_mag) / -2.5)) for i in range(len(starpairs))]
     return scaled
     
 
-def filter(starpairs,filter):
+def starfilter(starpairs,starfilter):
     # read in sed filter
     sed_input = []
     sedx = []
     sedy = []
     sed_pairs = []
-    print(filter)
-    with open(filter, 'r') as sed:
+    with open(starfilter, 'r') as sed:
         for line in sed:
-            if line[0] != '#':
+            if len(line.strip()) > 0 and line.strip()[0] not in ["#", '"', "-"]:
                 if line[-1] == '\n':
                     end = -1
                 else:
@@ -90,7 +89,7 @@ def main():
     # step 1: normalize template
     template = normalize(settings["star_template"],settings["vega_template"],settings["target_mag"])
     # step 2: filter
-    flux = filter(template,settings["filter"])
+    flux = starfilter(template,settings["filter"])
     # step 3: extinction correction
     ext_corr = extinction_correction(settings["k"],settings["airmass"])
     # step 4: fraction in aperture
@@ -118,11 +117,12 @@ def main():
     elif settings["mode"] == "S/N":
         mode = "signal to noise ratio"
         t = settings["exposure_time"]
-        output = nstar * t / (math.sqrt(nstar * t + npix(ns * t + nd * t + nrd ** 2)))
+        output = nstar * t / (math.sqrt(nstar * t + npix * (ns * t + nd * t + nrd ** 2)))
     else:
         print("Error: invalid mode provided.")
         return
-    print("Your final " + mode + " is:" + output)
+    print("Your final " + mode + " is:" + str(output))
+    return output
 
 main()
 
