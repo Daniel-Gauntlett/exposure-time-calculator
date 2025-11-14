@@ -45,6 +45,7 @@ def filter(starpairs,filter):
     sedx = []
     sedy = []
     sed_pairs = []
+    print(filter)
     with open(filter, 'r') as sed:
         for line in sed:
             if line[0] != '#':
@@ -78,9 +79,12 @@ def main():
     settings = {}
     for line in config:
         if line[0] != "#" and len(line) > 1:
-            templine = line.split("=")
+            templine = line.strip().split("=")
             try:
-                settings[templine[0]] = eval(templine[1])
+                if not templine[0] in ["filter", "vega_template", "star_template"]:
+                    settings[templine[0]] = eval(templine[1])
+                else:
+                    settings[templine[0]] = templine[1]
             except:
                 settings[templine[0]] = templine[1]
     # step 1: normalize template
