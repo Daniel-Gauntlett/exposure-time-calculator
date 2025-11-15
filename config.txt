@@ -2,27 +2,30 @@
 mode=S/N
 signal_noise_ratio=
 exposure_time=10
-target_mag=20
+target_mag=28
+zero_point=48.6
 target_profile=point
-fwhm=0.7
-seeing=0.7
+fwhm=0.0178
+seeing=0.0178
 airmass=1.2
 
 #sky parameters
 background_noise=1
 
 #files
-vega_template=Vega_SED.dat
-star_template=scidoc1534.txt
-filter=kp1465.txt
+star_template=Vega_SED.dat
+star_wavelength_unit=10 ** -10
+star_energy_unit=10 ** 7
+filter=scidoc1534.txt
+filter_wavelength_unit=10 ** -9
 
 #Fixed data per instrument
 gain=1.62
-filter_set=u
-pixel_scale=0.187   
+filter_set=v
+pixel_scale=9.066 * 10 ** -7
 QE=0.62
 readout_noise=5
-dark_current=0.03
+dark_current=1.8
 diameter=10
 ccd=0.62
 k=0.35

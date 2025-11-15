@@ -2,13 +2,14 @@ import mathfunctions
 import math
 pi = 3.1415926535897932384626
 e = 2.718281828459
+c = 3 * 10 ** 10
 
-def normalize(star,vega,star_mag):
+def normalize(star_template,star_mag,wavelengthunit,energyunit,zeropoint):
     star_input = []
     starx = []
     stary = []
     starpairs = []
-    with open(star, 'r') as curve:
+    with open(star_template, 'r') as curve:
         for line in curve:
             if len(line.strip()) > 0 and line.strip()[0] not in ["#", '"', "-"]:
                 if line[-1] == '\n':
@@ -17,29 +18,13 @@ def normalize(star,vega,star_mag):
                     end = len(line)
                 star_input.append(list(filter(lambda num: num != "", line[0:end].split(" "))))
                 starx.append(float(star_input[-1][0]))
-                stary.append(float(star_input[-1][1]) / 100)
-                starpairs.append((starx[-1],stary[-1]))
-    vega_input = []
-    vegax = []
-    vegay = []
-    vegapairs = []
-    with open(vega, 'r') as curve:
-        for line in curve:
-            if len(line.strip()) > 0 and line.strip()[0] not in ["#", '"', "-"]:
-                if line[-1] == '\n':
-                    end = -1
-                else:
-                    end = len(line)
-                vega_input.append(list(filter(lambda num: num != "", line[0:end].split(" "))))
-                vegax.append(float(vega_input[-1][0]))
-                vegay.append(float(vega_input[-1][1]) / 100)
-                vegapairs.append((vegax[-1],vegay[-1]))
-    vegainterped = mathfunctions.interpolate(vegapairs, [pair[0] for pair in starpairs])
-    scaled = [(starpairs[i][0], 10 ** ((vegainterped[i][1] - star_mag) / -2.5)) for i in range(len(starpairs))]
-    return scaled
+                stary.append(float(star_input[-1][1]))
+                starpairs.append((starx[-1] * wavelengthunit,stary[-1] * energyunit))
     
+    scaled = [(starpairs[i][0], starpairs[i][1] * 10 ** ((star_mag - (- 2.5 * math.log10(starpairs[i][1] * ((starpairs[i][0] ** 2) / c)) - zeropoint)) / -2.5)) for i in range(len(starpairs))]
+    return scaled
 
-def starfilter(starpairs,starfilter):
+def starfilter(starpairs,starfilter,filterunit):
     # read in sed filter
     sed_input = []
     sedx = []
@@ -55,13 +40,11 @@ def starfilter(starpairs,starfilter):
                 sed_input.append(list(filter(lambda num: num != "", line[0:end].split(" "))))
                 sedx.append(float(sed_input[-1][0]))
                 sedy.append(float(sed_input[-1][1]))
-                sed_pairs.append((sedx[-1],sedy[-1]))
+                sed_pairs.append((sedx[-1] * filterunit,sedy[-1]))
 
-    # interpolate sed_pairs over v filter for proper multiplication
-
-    interpolated = mathfunctions.interpolate(sed_pairs, [pair[0] for pair in starpairs])
-
-    flux = mathfunctions.integrate([(interpolated[i][0], interpolated[i][1] * starpairs[i][1]) for i in range(len(starpairs))], starpairs[0][0], starpairs[-1][0])
+    # interpolate star_pairs over v filter for proper multiplication
+    interpolated = mathfunctions.interpolate(starpairs, [pair[0] for pair in sed_pairs])
+    flux = mathfunctions.integrate([(interpolated[i][0], interpolated[i][1] * sed_pairs[i][1]) for i in range(len(interpolated))], sed_pairs[0][0], sed_pairs[-1][0])
     return flux
 
 def extinction_correction(k, airmass):
@@ -80,16 +63,16 @@ def main():
         if line[0] != "#" and len(line) > 1:
             templine = line.strip().split("=")
             try:
-                if not templine[0] in ["filter", "vega_template", "star_template"]:
+                if not templine[0] in ["filter", "star_template"]:
                     settings[templine[0]] = eval(templine[1])
                 else:
                     settings[templine[0]] = templine[1]
             except:
                 settings[templine[0]] = templine[1]
     # step 1: normalize template
-    template = normalize(settings["star_template"],settings["vega_template"],settings["target_mag"])
+    template = normalize(settings["star_template"],settings["target_mag"],settings["star_wavelength_unit"],settings["star_energy_unit"],settings["zero_point"])
     # step 2: filter
-    flux = starfilter(template,settings["filter"])
+    flux = starfilter(template,settings["filter"],settings["filter_wavelength_unit"])
     # step 3: extinction correction
     ext_corr = extinction_correction(settings["k"],settings["airmass"])
     # step 4: fraction in aperture
@@ -113,7 +96,7 @@ def main():
     if settings["mode"] == "E":
         mode = "exposure time"
         s = settings["signal_noise_ratio"]
-        output = (s ** 2 * (npix * nd + npix * ns + nstar) * t + math.sqrt((s ** 2 * (npix * nd + npix * ns + nstar) * t) ** 2 - 4 * nstar ** 2 * s ** 2 * npix * nrd ** 2)) / (2 * nstar ** 2)
+        output = (s ** 2 * (npix * nd + npix * ns + nstar) + math.sqrt((s ** 2 * (npix * nd + npix * ns + nstar)) ** 2 - 4 * nstar ** 2 * s ** 2 * npix * nrd ** 2)) / (2 * nstar ** 2)
     elif settings["mode"] == "S/N":
         mode = "signal to noise ratio"
         t = settings["exposure_time"]
